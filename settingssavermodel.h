@@ -5,6 +5,7 @@
 #include <QDomElement>
 
 #include "uifileimporter.h"
+#include "code.h"
 
 class UIFileImporter;
 /*
@@ -18,7 +19,7 @@ public:
 class WidgetSettings
 {
 public:
-    WidgetSettings(QDomElement element);
+    WidgetSettings(QDomElement widgetElement);
 public:
     enum WidgetProjectState {
         PresentBoth,
@@ -42,8 +43,8 @@ public:
     bool loadState() const {return m_loadState;}
     void setLoadState(bool loadState) {m_loadState = loadState;}
 
-    QString saveMethod(QString settingsObjectName);
-    QString loadMethod(QString settingsObjectName);
+    void generateSaveMethod(KODE::Code *code, QString settingsObjectName, QString sectionName = "");
+    void generateLoadMethod(KODE::Code *code, QString settingsObjectName, QString sectionName = "");
 
     QString keyName() const {return m_keyName;}
     void setKeyName(QString keyName) {m_keyName = keyName;}
@@ -57,6 +58,9 @@ private:
     QString m_className;
     QString m_widgetName;
     QString m_keyName;
+
+    bool m_completerForLineEdit;
+    int m_completerMaxSize;
 
     QString getValueString();
 };

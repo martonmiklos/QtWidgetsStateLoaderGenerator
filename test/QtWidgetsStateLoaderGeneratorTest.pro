@@ -18,23 +18,10 @@ RCC_DIR = build
 DESTDIR = bin
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
-    settingssavermodel.cpp \
-    uifileimporter.cpp \
-    widgetsettingssaver.cpp \
-    mainwindow_settings.cpp \
-    projectparser.cpp \
-    code.cpp
+    formtest2_settings.cpp \
+    formtest2.cpp
 
 HEADERS  += mainwindow.h \
-    settingssavermodel.h \
-    uifileimporter.h \
-    widgetsettingssaver.h \
-    projectparser.h \
-    code.h
+    formtest2.h
 
-FORMS    += mainwindow.ui \
-    widgetsettingssaver.ui
-
-OTHER_FILES += \
-    README.md
+FORMS    +=  formtest2.ui

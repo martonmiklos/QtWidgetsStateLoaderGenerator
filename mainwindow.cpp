@@ -35,13 +35,13 @@ void MainWindow::on_actionLoad_UI_file_triggered()
     QString uiPath = QFileDialog::getOpenFileName(
                 this,
                 tr("Select the .ui file"),
-                settings.value("lastUIDir").toString(),
+                settings.value("lastUIFile").toString(),
                 tr("UI files (*.ui)")
     );
 
     if (uiPath != "") {
         QFileInfo fi(uiPath);
-        settings.setValue("lastUIDir", fi.dir().path());
+        settings.setValue("lastUIFile", uiPath);
         m_tabWidgets.at(m_currentTabIndex)->importUIFile(uiPath);
         ui->tabWidget->setTabText(m_currentTabIndex, fi.fileName());
         this->repaint();

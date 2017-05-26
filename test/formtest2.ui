@@ -6,14 +6,21 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>796</width>
+    <height>464</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="7" column="0">
+    <widget class="QLineEdit" name="lineEditWithCompleter">
+     <property name="GenerateCompleter" stdset="0">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
    <item row="0" column="0">
     <widget class="QPushButton" name="pushButton">
      <property name="text">
@@ -46,16 +53,6 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="6" rowspan="4">
-    <widget class="QSlider" name="verticalSlider">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="3" rowspan="2">
-    <widget class="QDial" name="dial"/>
-   </item>
    <item row="2" column="4" colspan="2">
     <widget class="QComboBox" name="comboBox">
      <item>
@@ -75,6 +72,16 @@
      </item>
     </widget>
    </item>
+   <item row="1" column="6" rowspan="4">
+    <widget class="QSlider" name="verticalSlider">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3" rowspan="2">
+    <widget class="QDial" name="dial"/>
+   </item>
    <item row="3" column="0" colspan="3">
     <widget class="QRadioButton" name="radioButton">
      <property name="text">
@@ -82,14 +89,14 @@
      </property>
     </widget>
    </item>
+   <item row="4" column="5">
+    <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+   </item>
    <item row="4" column="0" colspan="2">
     <widget class="QTimeEdit" name="timeEdit"/>
    </item>
    <item row="4" column="3">
     <widget class="QSpinBox" name="spinBox"/>
-   </item>
-   <item row="4" column="5">
-    <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
    </item>
    <item row="5" column="0" colspan="3">
     <widget class="QProgressBar" name="progressBar">
@@ -102,6 +109,30 @@
     <widget class="QCheckBox" name="checkBox">
      <property name="text">
       <string>CheckBox</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLineEdit" name="lineEditWithCompleterLimitedHistory">
+     <property name="GenerateCompleter" stdset="0">
+      <bool>true</bool>
+     </property>
+     <property name="CompleterMaxCount" stdset="0">
+      <number>5</number>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1" colspan="4">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>&lt;- Lineedit with completer</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="2" colspan="2">
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>&lt;- Lineedit with completer max 5 items</string>
      </property>
     </widget>
    </item>

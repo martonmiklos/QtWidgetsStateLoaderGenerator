@@ -14,7 +14,6 @@ class FormTest2 : public QWidget
 public:
     explicit FormTest2(QWidget *parent = 0);
     ~FormTest2();
-    void closeEvent(QCloseEvent *event);
 private:
     Ui::FormTest2 *ui;
     void saveWidgetStates();

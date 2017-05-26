@@ -15,9 +15,3 @@ FormTest2::~FormTest2()
     saveWidgetStates();
     delete ui;
 }
-
-void FormTest2::closeEvent(QCloseEvent *event)
-{
-    saveWidgetStates();
-    QWidget::closeEvent(event);
-}

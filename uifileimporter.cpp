@@ -32,34 +32,51 @@ QList<WidgetSettings*> UIFileImporter::importUIFile(QString uiPath, bool *ok)
         QDomElement docElem = doc.documentElement();
         QDomNodeList widgetNodes = docElem.elementsByTagName("widget");
         for (int i = 0; i < widgetNodes.size(); i++) {
-            QDomElement element = widgetNodes.at(i).toElement();
+            // loop on widgets in the UI file
+            QDomElement widgetElement = widgetNodes.at(i).toElement();
             bool add = true;
-            // add QPushButtons only if has checkable attribute
-            if (element.attribute("class") == "QPushButton") {
-                add = false;
-                for (int j = 0; j<element.childNodes().count(); j++) {
-                    QDomElement propertyElement = element.childNodes().at(j).toElement();
-                    bool checkableTrue = false;
 
-                    for (int k = 0; k<propertyElement.childNodes().count(); k++) {
-                        if (propertyElement.childNodes().at(k).isText() && propertyElement.childNodes().at(k).nodeValue() == "true") {
-                            checkableTrue = true;
+            for (int j = 0; j<widgetElement.childNodes().count(); j++) {
+                // loop on the widget's properties
+                QDomElement property = widgetElement.childNodes().at(j).toElement();
+                if (property.attribute("name") == "enabled") {
+                    for (int k = 0; k<property.childNodes().count(); k++) {
+                        if (property.childNodes().at(k).toElement().tagName() == "bool") {
+                            if (property.childNodes().at(k).toElement().text() == "false")
+                                add = false; // do not add loader/saver for disabled widgets
                             break;
                         }
                     }
-
-                    if (propertyElement.attribute("name") == "checkable" && checkableTrue) {
-                        add = true;
-                        break;
-                    }
                 }
-            } else if (element.attribute("class") == "QWidget" && element.parentNode().toElement().attribute("class") == "QTabWidget") {
-                // do not add savegeometry for tabs
-                add = false;
+            }
+            if (add) {
+                // add QPushButtons only if has checkable attribute
+                if (widgetElement.attribute("class") == "QPushButton") {
+                    add = false;
+                    for (int j = 0; j<widgetElement.childNodes().count(); j++) {
+                        QDomElement propertyElement = widgetElement.childNodes().at(j).toElement();
+                        bool checkableTrue = false;
+
+                        for (int k = 0; k<propertyElement.childNodes().count(); k++) {
+                            if (propertyElement.childNodes().at(k).isText() && propertyElement.childNodes().at(k).nodeValue() == "true") {
+                                checkableTrue = true;
+                                break;
+                            }
+                        }
+
+                        if (propertyElement.attribute("name") == "checkable" && checkableTrue) {
+                            add = true;
+                            break;
+                        }
+                    }
+                } else if (widgetElement.attribute("class") == "QWidget" && widgetElement.parentNode().toElement().attribute("class") == "QTabWidget") {
+                    // do not add savegeometry for tabs
+                    add = false;
+                }
             }
 
             if (add) {
-                WidgetSettings *widget = new WidgetSettings(element);
+                WidgetSettings *widget = new WidgetSettings(widgetElement);
                 ret.append(widget);
             }
         }
