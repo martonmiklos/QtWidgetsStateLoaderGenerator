@@ -43,12 +43,14 @@ public:
     bool loadState() const {return m_loadState;}
     void setLoadState(bool loadState) {m_loadState = loadState;}
 
-    void generateSaveMethod(KODE::Code *code, QString settingsObjectName, QString sectionName = "");
-    void generateLoadMethod(KODE::Code *code, QString settingsObjectName, QString sectionName = "");
+    void generateSaveMethod(KODE::Code *code, QString settingsObjectName, QString settingsObjectOperand, QString sectionName = "");
+    void generateLoadMethod(KODE::Code *code, QString settingsObjectName, QString settingsObjectOperand, QString sectionName = "");
 
     QString keyName() const {return m_keyName;}
     void setKeyName(QString keyName) {m_keyName = keyName;}
 
+
+    bool getCompleterForLineEdit() const;
 
 private:
     bool m_saveState;

@@ -134,7 +134,7 @@ bool SettingsSaverModel::saveToFile(QString filePath,
                                     bool passSettingAsArgument,
                                     QString argument)
 {
-    QString settingsObject = "settings";
+    QString settingsObjectName = "settings";
     QString settingsObjectOperand = ".";
     if (passSettingAsArgument) {
         // argument name will be the last
@@ -143,9 +143,9 @@ bool SettingsSaverModel::saveToFile(QString filePath,
             m_error = tr("The passed argument is invalid: %1(Must have least two parts separated with space)").arg(argument);
             return false;
         } else {
-            settingsObject = parts.last();
-            if (settingsObject.startsWith('*') || settingsObject.startsWith('&')) {
-                settingsObject = settingsObject.mid(1);
+            settingsObjectName = parts.last();
+            if (settingsObjectName.startsWith('*') || settingsObjectName.startsWith('&')) {
+                settingsObjectName = settingsObjectName.mid(1);
             }
         }
 
@@ -169,14 +169,85 @@ bool SettingsSaverModel::saveToFile(QString filePath,
         // sort the sections to be able to print methods in section blocks
         sectionList.sort();
 
+        bool writeLineEditCompleters = false;
+        foreach (WidgetSettings *settings, m_elements) {
+            if (settings->getCompleterForLineEdit()) {
+                writeLineEditCompleters = true;
+                break;
+            }
+        }
+
         KODE::Code code;
         code.setDefaultIndentation(4);
         code.addLine("#include <QSettings>");
+        if (writeLineEditCompleters)
+            code.addLine("#include <QCompleter>");
         code.newLine();
         code.addLine(QString("#include \"%1\"").arg(uiImplementationHeader));
         code.addLine(QString("#include \"%1\"").arg(uiDeclarationHeader));
         code.newLine();
         code.newLine();
+
+
+        if (writeLineEditCompleters) {
+            code.addLine("void "+m_elements.first()->widgetName()+"::saveLineEditCompleter(QLineEdit *lineEdit, QSettings & settings, int maxCount)");
+            code.addLine("{");
+            code.addLine("    if (lineEdit->text().isEmpty())");
+            code.addLine("        return;");
+            code.newLine();
+            code.addLine("    QStringList completerList;");
+            code.addLine("    bool found = false;");
+            code.addLine("    settings.beginGroup(lineEdit->objectName() + \"_history\");");
+            code.addLine("    int count = settings.beginReadArray(\"completer\");");
+            code.addLine("    for (int i = 0; i<count; i++) {");
+            code.addLine("        settings.setArrayIndex(i);");
+            code.addLine("        QString value = settings.value(\"value\").toString();");
+            code.addLine("        if (value != lineEdit->text()) {");
+            code.addLine("            completerList << settings.value(\"value\").toString();");
+            code.addLine("        } else {");
+            code.addLine("            found = true;");
+            code.addLine("        }");
+            code.addLine("    }");
+            code.addLine("    settings.endArray();");
+            code.addLine("    settings.endGroup();");
+            code.newLine();
+            code.addLine("    if (!found) {");
+            code.addLine("        completerList << lineEdit->text();");
+            code.addLine("        if (maxCount > 0)");
+            code.addLine("            completerList = completerList.mid(completerList.count() - maxCount);");
+            code.newLine();
+            code.addLine("        settings.beginGroup(lineEdit->objectName() + \"_history\");");
+            code.addLine("        settings.beginWriteArray(\"completer\");");
+            code.addLine("        for (int i = 0; i<completerList.size(); i++) {");
+            code.addLine("            settings.setArrayIndex(i);");
+            code.addLine("            settings.setValue(\"value\", completerList[i]);");
+            code.addLine("        }");
+            code.addLine("        settings.endArray();");
+            code.addLine("        settings.endGroup();");
+            code.addLine("    }");
+            code.addLine("}");
+            code.newLine();
+            code.addLine("void "+m_elements.first()->widgetName()+"::loadLineEditCompleter(QLineEdit *lineEdit, QSettings &settings, int maxCount)");
+            code.addLine("{");
+            code.addLine("    QStringList completerList;");
+            code.addLine("    settings.beginGroup(lineEdit->objectName() + \"_history\");");
+            code.addLine("    int count = settings.beginReadArray(\"completer\");");
+            code.addLine("    for (int i = 0; i<count; i++) {");
+            code.addLine("        settings.setArrayIndex(i);");
+            code.addLine("        completerList << settings.value(\"value\").toString();");
+            code.addLine("    }");
+            code.addLine("    settings.endArray();");
+            code.addLine("    settings.endGroup();");
+            code.newLine();
+            code.addLine("    if (maxCount > 0)");
+            code.addLine("        completerList = completerList.mid(completerList.count() - maxCount);");
+            code.newLine();
+            code.addLine("    QCompleter *lineEditCompeter = new QCompleter(completerList, lineEdit);");
+            code.addLine("    lineEdit->setCompleter(lineEditCompeter);");
+            code.addLine("}");
+            code.newLine();
+            code.newLine();
+        }
 
         // generate save method
         code.addLine(QString("void %1::%2(%3)")
@@ -191,7 +262,7 @@ bool SettingsSaverModel::saveToFile(QString filePath,
         foreach (QString sectionName, sectionList) {
             foreach (WidgetSettings *settings, m_elements) {
                 if (settings->section() == sectionName) {
-                    settings->generateSaveMethod(&code, settingsObject + settingsObjectOperand, sectionName);
+                    settings->generateSaveMethod(&code, settingsObjectName, settingsObjectOperand, sectionName);
                 }
             }
         }
@@ -199,19 +270,20 @@ bool SettingsSaverModel::saveToFile(QString filePath,
         code.addLine("}");
         code.newLine();
 
-        code.addLine(QString("void %1::%2(%3){")
+        // generate load method
+        code.addLine(QString("void %1::%2(%3)")
                       .arg(m_elements.first()->widgetName())
                       .arg(loadMethod)
                       .arg(argument)
                       );
-
+        code.addLine("{");
         code.indent();
         if (!passSettingAsArgument)
             code.addLine(QString("QSettings settings;"));
         foreach (QString sectionName, sectionList) {
             foreach (WidgetSettings *settings, m_elements) {
                 if (settings->section() == sectionName) {
-                    settings->generateLoadMethod(&code, settingsObject + settingsObjectOperand, sectionName);
+                    settings->generateLoadMethod(&code, settingsObjectName, settingsObjectOperand, sectionName);
                 }
             }
         }
@@ -280,17 +352,20 @@ WidgetSettings::WidgetSettings(QDomElement widgetElement)
 
 /**
  * @brief WidgetSettings::saveMethod
- * @param settingsObjectName The QSetting instance name including the operand (. or ->)
+ * @param settingsObjectName The QSetting instance name without the operand (. or ->)
+ * @param settingsObjectOperand "." or "->" depending if the settingsObject is pointer or not
  * @return Returns a string containing the widget state save to the QSettings object
  */
-void WidgetSettings::generateSaveMethod(KODE::Code *code, QString settingsObjectName, QString sectionName)
+void WidgetSettings::generateSaveMethod(KODE::Code *code, QString settingsObjectName, QString settingsObjectOperand,  QString sectionName)
 {
-    if (m_saveState == false)
+    if (!m_saveState)
         return;
+
+    QString settingsObjectFull = settingsObjectName + settingsObjectOperand;
     // write begingroup if we are in a section
     if (!sectionName.isEmpty()) {
         code->addLine(QString("%1beginGroup(\"%2\");")
-                      .arg(settingsObjectName)
+                      .arg(settingsObjectFull)
                       .arg(sectionName));
     }
 
@@ -301,68 +376,37 @@ void WidgetSettings::generateSaveMethod(KODE::Code *code, QString settingsObject
     }
 
     if (m_className == "QLineEdit" && m_completerForLineEdit) {
-        code->addLine(QString("if (!ui->%1->text().isEmpty()) {").arg(m_widgetName));
-        code->indent();
-        code->addLine("QStringList completerList;");
-        code->addLine("bool found = false;");
-        code->addLine(
-                    QString("for (int i = 0; i<%1beginReadArray(\"%2_history\"); i++) {")
-                    .arg(settingsObjectName)
-                    .arg(m_widgetName));
-        code->indent();
-        code->addLine(QString("%1setArrayIndex(i);").arg(settingsObjectName));
-        code->addLine(QString("QString value = %1value(\"value\").toString();").arg(settingsObjectName));
-        code->addLine("if (value == ui->" + m_widgetName + "->text()) {");
-        code->indent();
-        code->addLine("found = true;");
-        code->addLine("completerList << " + m_widgetName + "value(\"value\").toString();");
-        code->unindent();
-        code->addLine("}");
-        code->addLine("settings.endArray();");
-        code->newLine();
-
-        code->addLine("if (!found) {");
-        code->indent();
-        code->addLine("completeList << ui->" + m_widgetName + "->text();");
-        code->addLine("settings.beginWriteArray(\"" + m_widgetName +"_history\");");
-        code->addLine("for (int i = 0; i<completerList.size(); i++) {");
-        code->indent();
-        code->addLine("settings.setArrayIndex(i);");
-        code->addLine("settings.setValue(\"value\", completeList[i]);");
-        code->unindent();
-        code->addLine("}");
-        code->addLine("settings.endArray();");
-        code->unindent();
-        code->addLine("}");
-        code->unindent();
-        code->addLine("}");
-        code->unindent();
-        code->addLine("}");
-        code->newLine();
+        if (m_completerMaxSize == 0) {
+            code->addLine("saveLineEditCompleter(ui->" +m_widgetName+ ", " + settingsObjectName + ");");
+        } else {
+            code->addLine("saveLineEditCompleter(ui->" +m_widgetName+ ", " + settingsObjectName + ", " + QString::number(m_completerMaxSize) + ");");
+        }
     }
 
-    code->addLine(QString("%1setValue(\"%2\", %3);").arg(settingsObjectName).arg(m_keyName).arg(variantValue));
+    code->addLine(QString("%1setValue(\"%2\", %3);").arg(settingsObjectFull).arg(m_keyName).arg(variantValue));
     // write endgroup if we are in a section
     if (!sectionName.isEmpty()) {
         code->addLine(QString("%1endGroup();")
-                      .arg(settingsObjectName));
+                      .arg(settingsObjectFull));
     }
 }
 
 /**
  * @brief WidgetSettings::loadMethod
- * @param settingsObjectName The QSetting instance name including the operand (. or ->)
+ * @param settingsObjectName The QSetting instance name without the operand (. or ->)
+ * @param settingsObjectOperand "." or "->" depending if the settingsObject is pointer or not
  * @return Returns a string containing the method which will apply the state readed from the settings to the widget
  */
-void WidgetSettings::generateLoadMethod(KODE::Code *code, QString settingsObjectName, QString sectionName)
+void WidgetSettings::generateLoadMethod(KODE::Code *code, QString settingsObjectName,  QString settingsObjectOperand, QString sectionName)
 {
     if (!m_loadState)
         return;
 
+    QString settingsObjectFull = settingsObjectName + settingsObjectOperand;
     if (!sectionName.isEmpty()) {
         // write begingroup if we are in a section
         code->addLine(QString("%1beginGroup(\"%2\");")
-                            .arg(settingsObjectName)
+                            .arg(settingsObjectFull)
                             .arg(sectionName));
     }
 
@@ -371,69 +415,79 @@ void WidgetSettings::generateLoadMethod(KODE::Code *code, QString settingsObject
             m_className == "QPushButton") {
         code->addLine(QString("ui->%1->setChecked(%2value(\"%3\").toBool());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QLineEdit") {
+        if (m_completerMaxSize == 0) {
+            code->addLine("loadLineEditCompleter(ui->" +m_widgetName+ ", " + settingsObjectName + ");");
+        } else {
+            code->addLine("loadLineEditCompleter(ui->" +m_widgetName+ ", " + settingsObjectName + ", " + QString::number(m_completerMaxSize) + ");");
+        }
         code->addLine(QString("ui->%1->setText(%2value(\"%3\").toString());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QPlainTextEdit") {
         code->addLine(QString("ui->%1->setPlainText(%2value(\"%3\").toString());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QSpinBox" ||
              m_className == "QSlider" ||
              m_className == "QDial") {
         code->addLine(QString("ui->%1->setValue(%2value(\"%3\").toInt());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QDoubleSpinBox") {
         code->addLine(QString("ui->%1->setValue(%2value(\"%3\").toDouble());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QTextEdit") {
         code->addLine(QString("ui->%1->setHtml(%2value(\"%3\").toString());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QDateEdit") {
         code->addLine(QString("ui->%1->setDate(%2value(\"%3\").toDate());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QDateTimeEdit") {
         code->addLine(QString("ui->%1->setDateTime(%2.alue(\"%3\").toDateTime());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QTimeEdit") {
         code->addLine(QString("ui->%1->setTime(%2value(\"%3\").toTime());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QComboBox" ||
              m_className == "QTabWidget" ||
              m_className == "QTabView") {
         code->addLine(QString("ui->%1->setCurrentIndex(%2value(\"%3\").toInt());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
-    } else if (m_className == "QWidget") {
+    } else if (m_className == "QWidget" || m_className == "QDialog" || m_className == "QMainWindow") {
         code->addLine(QString("ui->%1->restoreGeometry(%2value(\"%3\").toByteArray());")
                 .arg(m_widgetName)
-                .arg(settingsObjectName)
+                .arg(settingsObjectFull)
                 .arg(m_keyName));
     }
 
     if (!sectionName.isEmpty()) {
         // write endgroup if we are in a section
         code->addLine(QString("%1endGroup();")
-                            .arg(settingsObjectName));
+                            .arg(settingsObjectFull));
     }
+}
+
+bool WidgetSettings::getCompleterForLineEdit() const
+{
+    return m_completerForLineEdit;
 }
 
 QString WidgetSettings::getValueString()
@@ -463,7 +517,7 @@ QString WidgetSettings::getValueString()
              m_className == "QTabWidget" ||
              m_className == "QTabView")
         return QString("ui->%1->currentIndex()").arg(m_widgetName);
-    else if (m_className == "QWidget")
+    else if (m_className == "QWidget" || m_className == "QDialog" || m_className == "QMainWindow")
         return QString("ui->%1->saveGeometry()").arg(m_widgetName);
     return "";
 }

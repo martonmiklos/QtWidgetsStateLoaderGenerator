@@ -4,34 +4,67 @@
 #include "ui_formtest2.h"
 
 
+void FormTest2::saveLineEditCompleter(QLineEdit *lineEdit, QSettings & settings, int maxCount)
+{
+    if (lineEdit->text().isEmpty())
+        return;
+
+    QStringList completerList;
+    bool found = false;
+    settings.beginGroup(lineEdit->objectName() + "_history");
+    int count = settings.beginReadArray("completer");
+    for (int i = 0; i<count; i++) {
+        settings.setArrayIndex(i);
+        QString value = settings.value("value").toString();
+        if (value != lineEdit->text()) {
+            completerList << settings.value("value").toString();
+        } else {
+            found = true;
+        }
+    }
+    settings.endArray();
+    settings.endGroup();
+
+    if (!found) {
+        completerList << lineEdit->text();
+        if (maxCount > 0)
+            completerList = completerList.mid(completerList.count() - maxCount);
+
+        settings.beginGroup(lineEdit->objectName() + "_history");
+        settings.beginWriteArray("completer");
+        for (int i = 0; i<completerList.size(); i++) {
+            settings.setArrayIndex(i);
+            settings.setValue("value", completerList[i]);
+        }
+        settings.endArray();
+        settings.endGroup();
+    }
+}
+
+void FormTest2::loadLineEditCompleter(QLineEdit *lineEdit, QSettings &settings, int maxCount)
+{
+    QStringList completerList;
+    settings.beginGroup(lineEdit->objectName() + "_history");
+    int count = settings.beginReadArray("completer");
+    for (int i = 0; i<count; i++) {
+        settings.setArrayIndex(i);
+        completerList << settings.value("value").toString();
+    }
+    settings.endArray();
+    settings.endGroup();
+
+    if (maxCount > 0)
+        completerList = completerList.mid(completerList.count() - maxCount);
+
+    QCompleter *lineEditCompeter = new QCompleter(completerList, lineEdit);
+    lineEdit->setCompleter(lineEditCompeter);
+}
+
+
 void FormTest2::saveWidgets()
 {
     QSettings settings;
-    settings.setValue("FormTest2", ui->FormTest2->saveGeometry());
-    if (!ui->lineEditWithCompleter->text().isEmpty()) {
-        QStringList completerList;
-        bool found = false;
-        for (int i = 0; i<settings.beginReadArray("lineEditWithCompleter_history"); i++) {
-            settings.setArrayIndex(i);
-            QString value = settings.value("value").toString();
-            if (value == ui->lineEditWithCompleter->text()) {
-                found = true;
-                completerList << lineEditWithCompletervalue("value").toString();
-            }
-            settings.endArray();
-
-            if (!found) {
-                completeList << ui->lineEditWithCompleter->text();
-                settings.beginWriteArray("lineEditWithCompleter_history");
-                for (int i = 0; i<completerList.size(); i++) {
-                    settings.setArrayIndex(i);
-                    settings.setValue("value", completeList[i]);
-                }
-                settings.endArray();
-            }
-        }
-    }
-
+    saveLineEditCompleter(ui->lineEditWithCompleter, settings., 0);
     settings.setValue("lineEditWithCompleter", ui->lineEditWithCompleter->text());
     settings.setValue("dateTimeEdit", ui->dateTimeEdit->dateTime());
     settings.setValue("dateEdit", ui->dateEdit->date());
@@ -47,39 +80,17 @@ void FormTest2::saveWidgets()
     settings.setValue("timeEdit", ui->timeEdit->time());
     settings.setValue("spinBox", ui->spinBox->value());
     settings.setValue("checkBox", ui->checkBox->isChecked());
-    if (!ui->lineEditWithCompleterLimitedHistory->text().isEmpty()) {
-        QStringList completerList;
-        bool found = false;
-        for (int i = 0; i<settings.beginReadArray("lineEditWithCompleterLimitedHistory_history"); i++) {
-            settings.setArrayIndex(i);
-            QString value = settings.value("value").toString();
-            if (value == ui->lineEditWithCompleterLimitedHistory->text()) {
-                found = true;
-                completerList << lineEditWithCompleterLimitedHistoryvalue("value").toString();
-            }
-            settings.endArray();
-
-            if (!found) {
-                completeList << ui->lineEditWithCompleterLimitedHistory->text();
-                settings.beginWriteArray("lineEditWithCompleterLimitedHistory_history");
-                for (int i = 0; i<completerList.size(); i++) {
-                    settings.setArrayIndex(i);
-                    settings.setValue("value", completeList[i]);
-                }
-                settings.endArray();
-            }
-        }
-    }
-
+    saveLineEditCompleter(ui->lineEditWithCompleterLimitedHistory, settings.);
     settings.setValue("lineEditWithCompleterLimitedHistory", ui->lineEditWithCompleterLimitedHistory->text());
 }
 
 void FormTest2::loadWidgets(){
     QSettings settings;
-    ui->FormTest2->restoreGeometry(settings.value("FormTest2").toByteArray());
+    loadLineEditCompleter(ui->lineEditWithCompleter, settings, 0);
     ui->lineEditWithCompleter->setText(settings.value("lineEditWithCompleter").toString());
     ui->dateTimeEdit->setDateTime(settings..alue("dateTimeEdit").toDateTime());
     ui->dateEdit->setDate(settings.value("dateEdit").toDate());
+    loadLineEditCompleter(ui->lineEdit, settings, 0);
     ui->lineEdit->setText(settings.value("lineEdit").toString());
     ui->plainTextEdit->setPlainText(settings.value("plainTextEdit").toString());
     ui->textEdit->setHtml(settings.value("textEdit").toString());
@@ -92,5 +103,6 @@ void FormTest2::loadWidgets(){
     ui->timeEdit->setTime(settings.value("timeEdit").toTime());
     ui->spinBox->setValue(settings.value("spinBox").toInt());
     ui->checkBox->setChecked(settings.value("checkBox").toBool());
+    loadLineEditCompleter(ui->lineEditWithCompleterLimitedHistory, settings);
     ui->lineEditWithCompleterLimitedHistory->setText(settings.value("lineEditWithCompleterLimitedHistory").toString());
 }
