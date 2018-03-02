@@ -46,3 +46,10 @@ Makefile*
 
 # QtCtreator CMake
 CMakeLists.txt.user
+
+bin/*
+build/*
+.directory
+test/bin/*
+test/build/*
+.qmake.stash
