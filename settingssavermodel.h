@@ -52,6 +52,9 @@ public:
 
     bool getCompleterForLineEdit() const;
 
+    bool getTopLevel() const;
+    void setTopLevel(bool topLevel);
+
 private:
     bool m_saveState;
     bool m_loadState;
@@ -60,6 +63,7 @@ private:
     QString m_className;
     QString m_widgetName;
     QString m_keyName;
+    bool m_topLevel;
 
     bool m_completerForLineEdit;
     int m_completerMaxSize;

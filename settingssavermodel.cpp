@@ -320,7 +320,8 @@ QString SettingsSaverModel::error() const
     return m_error;
 }
 
-WidgetSettings::WidgetSettings(QDomElement widgetElement)
+WidgetSettings::WidgetSettings(QDomElement widgetElement) :
+    m_topLevel(false)
 {
     m_className = widgetElement.attribute("class");
     m_widgetName = widgetElement.attribute("name");
@@ -361,6 +362,10 @@ void WidgetSettings::generateSaveMethod(KODE::Code *code, QString settingsObject
     if (!m_saveState)
         return;
 
+    QString accessor = QString("ui->%1").arg(m_widgetName);
+    if (m_topLevel)
+        accessor = "this";
+
     QString settingsObjectFull = settingsObjectName + settingsObjectOperand;
     // write begingroup if we are in a section
     if (!sectionName.isEmpty()) {
@@ -377,9 +382,9 @@ void WidgetSettings::generateSaveMethod(KODE::Code *code, QString settingsObject
 
     if (m_className == "QLineEdit" && m_completerForLineEdit) {
         if (m_completerMaxSize == 0) {
-            code->addLine("saveLineEditCompleter(ui->" +m_widgetName+ ", " + settingsObjectName + ");");
+            code->addLine("saveLineEditCompleter(" +accessor+ ", " + settingsObjectName + ");");
         } else {
-            code->addLine("saveLineEditCompleter(ui->" +m_widgetName+ ", " + settingsObjectName + ", " + QString::number(m_completerMaxSize) + ");");
+            code->addLine("saveLineEditCompleter(" +accessor+ ", " + settingsObjectName + ", " + QString::number(m_completerMaxSize) + ");");
         }
     }
 
@@ -402,6 +407,10 @@ void WidgetSettings::generateLoadMethod(KODE::Code *code, QString settingsObject
     if (!m_loadState)
         return;
 
+    QString accessor = QString("ui->%1").arg(m_widgetName);
+    if (m_topLevel)
+        accessor = "this";
+
     QString settingsObjectFull = settingsObjectName + settingsObjectOperand;
     if (!sectionName.isEmpty()) {
         // write begingroup if we are in a section
@@ -413,8 +422,8 @@ void WidgetSettings::generateLoadMethod(KODE::Code *code, QString settingsObject
     if (m_className == "QCheckBox" ||
             m_className == "QRadioButton" ||
             m_className == "QPushButton") {
-        code->addLine(QString("ui->%1->setChecked(%2value(\"%3\").toBool());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setChecked(%2value(\"%3\").toBool());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QLineEdit") {
@@ -423,57 +432,62 @@ void WidgetSettings::generateLoadMethod(KODE::Code *code, QString settingsObject
         } else {
             code->addLine("loadLineEditCompleter(ui->" +m_widgetName+ ", " + settingsObjectName + ", " + QString::number(m_completerMaxSize) + ");");
         }
-        code->addLine(QString("ui->%1->setText(%2value(\"%3\").toString());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setText(%2value(\"%3\").toString());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QPlainTextEdit") {
-        code->addLine(QString("ui->%1->setPlainText(%2value(\"%3\").toString());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setPlainText(%2value(\"%3\").toString());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QSpinBox" ||
              m_className == "QSlider" ||
              m_className == "QDial") {
-        code->addLine(QString("ui->%1->setValue(%2value(\"%3\").toInt());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setValue(%2value(\"%3\").toInt());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QDoubleSpinBox") {
-        code->addLine(QString("ui->%1->setValue(%2value(\"%3\").toDouble());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setValue(%2value(\"%3\").toDouble());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QTextEdit") {
-        code->addLine(QString("ui->%1->setHtml(%2value(\"%3\").toString());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setHtml(%2value(\"%3\").toString());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QDateEdit") {
-        code->addLine(QString("ui->%1->setDate(%2value(\"%3\").toDate());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setDate(%2value(\"%3\").toDate());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QDateTimeEdit") {
-        code->addLine(QString("ui->%1->setDateTime(%2.alue(\"%3\").toDateTime());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setDateTime(%2.alue(\"%3\").toDateTime());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if(m_className == "QTimeEdit") {
-        code->addLine(QString("ui->%1->setTime(%2value(\"%3\").toTime());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setTime(%2value(\"%3\").toTime());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QComboBox" ||
              m_className == "QTabWidget" ||
              m_className == "QTabView") {
-        code->addLine(QString("ui->%1->setCurrentIndex(%2value(\"%3\").toInt());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->setCurrentIndex(%2value(\"%3\").toInt());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     } else if (m_className == "QWidget" || m_className == "QDialog" || m_className == "QMainWindow") {
-        code->addLine(QString("ui->%1->restoreGeometry(%2value(\"%3\").toByteArray());")
-                .arg(m_widgetName)
+        code->addLine(QString("%1->restoreGeometry(%2value(\"%3\").toByteArray());")
+                .arg(accessor)
+                .arg(settingsObjectFull)
+                .arg(m_keyName));
+    } else if (m_className == "QPathEdit") {
+        code->addLine(QString("%1->setPath(%2value(\"%3\", true).toString());")
+                .arg(accessor)
                 .arg(settingsObjectFull)
                 .arg(m_keyName));
     }
@@ -490,35 +504,51 @@ bool WidgetSettings::getCompleterForLineEdit() const
     return m_completerForLineEdit;
 }
 
+bool WidgetSettings::getTopLevel() const
+{
+    return m_topLevel;
+}
+
+void WidgetSettings::setTopLevel(bool topLevel)
+{
+    m_topLevel = topLevel;
+}
+
 QString WidgetSettings::getValueString()
 {
+    QString accessor = QString("ui->%1").arg(m_widgetName);
+    if (m_topLevel)
+        accessor = "this";
+
     if (m_className == "QCheckBox" ||
             m_className == "QRadioButton" ||
             m_className == "QPushButton")
-        return QString("ui->%1->isChecked()").arg(m_widgetName);
+        return QString("%1->isChecked()").arg(accessor);
     else if (m_className == "QLineEdit")
-        return QString("ui->%1->text()").arg(m_widgetName);
+        return QString("%1->text()").arg(accessor);
     else if(m_className == "QPlainTextEdit")
-        return QString("ui->%1->toPlainText()").arg(m_widgetName);
+        return QString("%1->toPlainText()").arg(accessor);
     else if (m_className == "QTextEdit")
-        return QString("ui->%1->toHtml()").arg(m_widgetName);
+        return QString("%1->toHtml()").arg(accessor);
     else if (m_className == "QSpinBox" ||
              m_className == "QDoubleSpinBox" ||
              m_className == "QSlider" ||
              m_className == "QDial")
-        return QString("ui->%1->value()").arg(m_widgetName);
+        return QString("%1->value()").arg(accessor);
     else if (m_className == "QDateEdit")
-        return QString("ui->%1->date()").arg(m_widgetName);
+        return QString("%1->date()").arg(accessor);
     else if (m_className == "QDateTimeEdit")
-        return QString("ui->%1->dateTime()").arg(m_widgetName);
+        return QString("%1->dateTime()").arg(accessor);
     else if (m_className == "QTimeEdit")
-        return QString("ui->%1->time()").arg(m_widgetName);
+        return QString("%1->time()").arg(accessor);
     else if (m_className == "QComboBox" ||
              m_className == "QTabWidget" ||
              m_className == "QTabView")
-        return QString("ui->%1->currentIndex()").arg(m_widgetName);
+        return QString("%1->currentIndex()").arg(accessor);
     else if (m_className == "QWidget" || m_className == "QDialog" || m_className == "QMainWindow")
-        return QString("ui->%1->saveGeometry()").arg(m_widgetName);
+        return QString("%1->saveGeometry()").arg(accessor);
+    else if (m_className == "QPathEdit")
+        return QString("%1->path()").arg(accessor);
     return "";
 }
 

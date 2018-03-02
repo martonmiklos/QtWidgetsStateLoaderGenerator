@@ -11,6 +11,7 @@ UIFileImporter::UIFileImporter()
 
 QList<WidgetSettings*> UIFileImporter::importUIFile(QString uiPath, bool *ok)
 {
+    bool first = true;
     QList<WidgetSettings*> ret;
     if (uiPath != "") {
         QDomDocument doc("mydocument");
@@ -77,8 +78,11 @@ QList<WidgetSettings*> UIFileImporter::importUIFile(QString uiPath, bool *ok)
 
             if (add) {
                 WidgetSettings *widget = new WidgetSettings(widgetElement);
+                if (first)
+                    widget->setTopLevel(true);
                 ret.append(widget);
             }
+            first = false;
         }
     }
     *ok = true;
