@@ -43,5 +43,6 @@ Project scope:
     QDateTimeEdit
     QTimeEdit
     QComboBox
+    [QPathEdit](https://github.com/Skycoder42/QPathEdit)
 
 *: QPlainText saved as plain text, use QTextEdit to save rich text
