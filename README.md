@@ -33,8 +33,8 @@ Project scope:
     QRadioButton
     QPushButton
     QLineEdit
-    QPlainTextEdit <sup>*</sup>
-    QTextEdit <sup>*</sup>
+    QPlainTextEdit (saved as plain text)
+    QTextEdit (saved as rich text)
     QSpinBox
     QDoubleSpinBox
     QSlider
@@ -45,4 +45,5 @@ Project scope:
     QComboBox
     [QPathEdit](https://github.com/Skycoder42/QPathEdit)
 
-*: QPlainText saved as plain text, use QTextEdit to save rich text
+
+
