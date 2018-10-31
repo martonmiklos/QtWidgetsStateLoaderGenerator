@@ -19,7 +19,7 @@ public:
 class WidgetSettings
 {
 public:
-    WidgetSettings(QDomElement widgetElement);
+    WidgetSettings(QDomElement widgetElement, QDomNode customWidgetsNode);
 public:
     enum WidgetProjectState {
         PresentBoth,

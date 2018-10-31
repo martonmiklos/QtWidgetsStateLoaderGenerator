@@ -32,6 +32,8 @@ QList<WidgetSettings*> UIFileImporter::importUIFile(QString uiPath, bool *ok)
 
         QDomElement docElem = doc.documentElement();
         QDomNodeList widgetNodes = docElem.elementsByTagName("widget");
+        QDomNodeList customWidgetNodes = docElem.elementsByTagName("customwidgets");
+        QDomNode customWidgetNode = customWidgetNodes.at(0);
         for (int i = 0; i < widgetNodes.size(); i++) {
             // loop on widgets in the UI file
             QDomElement widgetElement = widgetNodes.at(i).toElement();
@@ -77,7 +79,7 @@ QList<WidgetSettings*> UIFileImporter::importUIFile(QString uiPath, bool *ok)
             }
 
             if (add) {
-                WidgetSettings *widget = new WidgetSettings(widgetElement);
+                WidgetSettings *widget = new WidgetSettings(widgetElement, customWidgetNode);
                 if (first)
                     widget->setTopLevel(true);
                 ret.append(widget);

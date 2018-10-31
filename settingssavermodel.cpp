@@ -320,10 +320,30 @@ QString SettingsSaverModel::error() const
     return m_error;
 }
 
-WidgetSettings::WidgetSettings(QDomElement widgetElement) :
+WidgetSettings::WidgetSettings(QDomElement widgetElement, QDomNode customWidgetsNode) :
     m_topLevel(false)
 {
     m_className = widgetElement.attribute("class");
+
+    bool customFound = false;
+    for (int i = 0; i<customWidgetsNode.childNodes().count(); i++) {
+        bool isCustom = false;
+        for (int j = 0; j<customWidgetsNode.childNodes().at(i).childNodes().count(); j++) {
+            if (customWidgetsNode.childNodes().at(i).childNodes().at(j).toElement().tagName() == "class"
+                    && customWidgetsNode.childNodes().at(i).childNodes().at(j).toElement().text() == m_className) {
+                isCustom = true;
+                customFound = true;
+            }
+
+            if (isCustom && customWidgetsNode.childNodes().at(i).childNodes().at(j).toElement().tagName() == "extends") {
+                m_className = customWidgetsNode.childNodes().at(i).childNodes().at(j).toElement().text();
+                break;
+            }
+        }
+        if (customFound)
+            break;
+    }
+
     m_widgetName = widgetElement.attribute("name");
     m_keyName = m_widgetName;
     m_loadState = true;
