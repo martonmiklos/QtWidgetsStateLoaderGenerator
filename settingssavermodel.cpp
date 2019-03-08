@@ -250,7 +250,7 @@ bool SettingsSaverModel::saveToFile(QString filePath,
         }
 
         // generate save method
-        code.addLine(QString("void %1::%2(%3)")
+        code.addLine(QString("void %1::%2(%3) const")
                       .arg(m_elements.first()->widgetName())
                       .arg(saveMethod)
                       .arg(argument));
