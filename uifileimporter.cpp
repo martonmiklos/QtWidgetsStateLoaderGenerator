@@ -54,21 +54,19 @@ QList<WidgetSettings*> UIFileImporter::importUIFile(QString uiPath, bool *ok)
             }
             if (add) {
                 // add QPushButtons only if has checkable attribute
-                if (widgetElement.attribute("class") == "QPushButton") {
+                if (widgetElement.attribute("class") == "QPushButton" ||
+                    widgetElement.attribute("class") == "QToolButton") {
                     add = false;
                     for (int j = 0; j<widgetElement.childNodes().count(); j++) {
                         QDomElement propertyElement = widgetElement.childNodes().at(j).toElement();
-                        bool checkableTrue = false;
-
-                        for (int k = 0; k<propertyElement.childNodes().count(); k++) {
-                            if (propertyElement.childNodes().at(k).isText() && propertyElement.childNodes().at(k).nodeValue() == "true") {
-                                checkableTrue = true;
-                                break;
+                        if (propertyElement.attribute("name") == "checkable") {
+                            for (int k = 0; k<propertyElement.childNodes().count(); k++) {
+                                if (propertyElement.childNodes().at(k).toElement().tagName() == "bool"
+                                        && propertyElement.childNodes().at(k).toElement().text() == "true") {
+                                    add = true;
+                                    break;
+                                }
                             }
-                        }
-
-                        if (propertyElement.attribute("name") == "checkable" && checkableTrue) {
-                            add = true;
                             break;
                         }
                     }
