@@ -568,7 +568,7 @@ QString WidgetSettings::getValueString()
     else if (m_className == "QWidget" || m_className == "QDialog" || m_className == "QMainWindow")
         return QString("%1->saveGeometry()").arg(accessor);
     else if (m_className == "QPathEdit")
-        return QString("%1->path()").arg(accessor);
+        return QString("%1->editPath()").arg(accessor);
     return "";
 }
 
