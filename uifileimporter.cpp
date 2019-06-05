@@ -73,6 +73,20 @@ QList<WidgetSettings*> UIFileImporter::importUIFile(QString uiPath, bool *ok)
                 } else if (widgetElement.attribute("class") == "QWidget" && widgetElement.parentNode().toElement().attribute("class") == "QTabWidget") {
                     // do not add savegeometry for tabs
                     add = false;
+                } else if (widgetElement.attribute("class") == "QPlainTextEdit") {
+                    for (int j = 0; j<widgetElement.childNodes().count(); j++) {
+                        QDomElement propertyElement = widgetElement.childNodes().at(j).toElement();
+                        if (propertyElement.attribute("name") == "readOnly") {
+                            for (int k = 0; k<propertyElement.childNodes().count(); k++) {
+                                if (propertyElement.childNodes().at(k).toElement().tagName() == "bool"
+                                        && propertyElement.childNodes().at(k).toElement().text() == "true") {
+                                    add = false;
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
                 }
             }
 
